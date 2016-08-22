@@ -1,0 +1,32 @@
+use ast;
+use std::str::FromStr;
+
+grammar;
+
+//pub Graph: ast::Graph = {
+//    GraphLine+ => // build this up. petgraph unstable graph should work fine
+//}
+
+pub GraphLine: Vec<ast::GraphIdent> = {
+    <a: GraphIdent> <b: ("=>" GraphIdent)+> ";"=> {
+        let mut c: Vec<_> = b.into_iter().map(|(_, ident)| ident).collect();
+        c.insert(0, a);
+        c
+    }
+};
+
+GraphIdent: ast::GraphIdent = {
+    "connect" => ast::GraphIdent::Connect,
+    "disconnect" => ast::GraphIdent::Disconnect,
+    Ident => ast::GraphIdent::Identifier(<>)
+};
+
+Ident: String = {
+    // note: this shouldn't match keywords, do something about it.
+    r"[a-zA-Z](_?[a-zA-Z0-9])*" => <>.to_string(),
+};
+
+
+Num: i32 = {
+    r"[0-9]" => i32::from_str(<>).unwrap(),
+};
