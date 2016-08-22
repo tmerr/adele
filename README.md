@@ -12,8 +12,8 @@ systems gui model;
 type color = red | blue;
 type maybecolor = red | blue | neither;
 type place_column = color * integer 0 7;
-type game_state = array (array maybecolor 6) 7;
-type game_over_state = maybecolor * board_state;
+type game_state = color * array (array maybecolor 6) 7;
+type game_over_state = maybecolor * game_state;
 
 msg gui place_disc place_column;
 msg model update_board game_state;
