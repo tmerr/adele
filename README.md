@@ -4,7 +4,7 @@ Status: Everything here is tentative, I'm working out ideas before the implement
 
 Adele is an interface description language (IDL) that's minimal and makes strong guarantees. It is motivated by the fact that networking code is tedious to write and is often duplicated across the server and client. Life would be easier if we could define our networking logic in one place and use it to generate code for whatever language we would like.
 
-Adele is oriented around messages. A message has a sender, a name, a type, and a set of valid messages that can follow it. For example imagine a game of Connect Four with separate gui and model logic. The gui's responsibilities would be to ask the server to drop a colored disc in a column, to be able to receive a new board state, and to be able to receive that someone won. This would be expressed:
+Adele is oriented around messages. A message has a sender, a name, a type, and a set of valid messages that can follow it. For example imagine a game of Connect Four with separate gui and model logic. The gui's responsibilities would be to ask the server to drop a colored disc in a column, to be able to receive a new board state, and to be able to receive that the game is over. This would be expressed:
 
 ```
 systems gui model;
