@@ -11,9 +11,9 @@ systems gui model;
 
 type color = red | blue;
 type maybecolor = red | blue | neither;
-type place_column = color * integer 0 7;
-type game_state = color * array (array maybecolor 6) 7;
-type game_over_state = maybecolor * game_state;
+alias place_column = color * integer 0 7;
+alias game_state = color * array (array maybecolor 6) 7;
+alias game_over_state = maybecolor * game_state;
 
 msg gui place_disc place_column;
 msg model update_board game_state;
@@ -54,24 +54,12 @@ arrow: `=>`, sum: `|`, product: `*`, eq: `=`, lparen: `(`, rparen: `)`, terminat
 #####Grammar
 Here's the grammar in ISO 14977 EBNF where whitespace is ignored and tokens are in capital letters.
 ```
-adele = typedecls, systemsdecl, graph;
-typedecls = typedecl, {typedecl};
-
-typedecl = [DYNAMIC] IDENTIFIER, EQ, tyroot, TERMINATE;
-tyroot = tycon {tynested}
-       | typroduct
-       | tysum;
-typroduct = tynested, PRODUCT, tynested;
-tysum = IDENTIFIER, tynested, SUM, IDENTIFER, tynested;
-tynested = tycon
-         | LPAREN tyroot RPAREN;
-tycon = PRIMITIVE
-      | INTLITERAL
-      | IDENTIFIER;
+adele = systemsdecl, {typedecl}, {messagedecl}, graph;
 
 systemsdecl = SYSTEMS, IDENTIFIER, IDENTIFIER, TERMINATE;
 
-messagedecls = messagedecl {messagedecl};
+FIXME: typedecl = ...
+
 messagedecl = MSG, IDENTIFIER, IDENTIFIER, IDENTIFIER, TERMINATE;
 
 graph = graphline {graphline};
