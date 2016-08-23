@@ -1,3 +1,5 @@
+extern crate petgraph;
+
 pub mod parser;
 pub mod ast;
 

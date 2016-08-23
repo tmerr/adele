@@ -9,3 +9,6 @@ version = "0.12.0"
 
 [build-dependencies.lalrpop]
 version = "0.12.0"
+
+[dependencies]
+petgraph = "0.2.7"

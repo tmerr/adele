@@ -1,32 +1,101 @@
 use ast;
-use std::str::FromStr;
 
 grammar;
 
-//pub Graph: ast::Graph = {
-//    GraphLine+ => // build this up. petgraph unstable graph should work fine
-//}
+pub SystemsDecl: ast::SystemsDecl = {
+    "systems" <a: Ident> <b: Ident> ";" => ast::SystemsDecl(a, b),
+};
+
+pub TyDecls: Vec<ast::TyDecl> = {
+    TyDecl* => <>,
+};
+
+TyDecl: ast::TyDecl = {
+    "type" <Ident> "=" <TyCon> ";" => ast::TyDecl(<>),
+};
+
+TyCon: ast::TyCon = {
+    <a: Ident> "of" <b: Ty> <c: ("|" <Ident> "of" <Ty>)*> => {
+        let mut c = c;
+        c.insert(0, (a, b));
+        ast::TyCon::Sum(c)
+    },
+    Ty => ast::TyCon::Direct(<>),
+};
+
+Ty: ast::Ty = {
+    <a: Ident> <b: InnerTy*> <c: ("*" <Ident> <InnerTy*>)*> => {
+        if c.len() == 0 {
+            ast::Ty::TyApply(a, b)
+        } else {
+            let mut c = c;
+            c.insert(0, (a, b));
+            let tys: Vec<_> = c.into_iter()
+                .map(|(x, y)| ast::Ty::TyApply(x, y))
+                .collect();
+            ast::Ty::Product(tys)
+        }
+    },
+    IntLiteral => <>,
+};
+
+InnerTy: ast::Ty = {
+    "(" <Ty> ")" => <>,
+    Ident => ast::Ty::TyApply(<>, vec![]),
+    IntLiteral => <>,
+};
+
+IntLiteral: ast::Ty = {
+    r"[0-9]+" => ast::Ty::IntLiteral(<>.to_string()),
+};
+
+pub MessageDecls: Vec<ast::MessageDecl> = {
+    MessageDecl+ => <>,
+};
+
+MessageDecl: ast::MessageDecl = {
+    "msg" <sender: Ident> <name: Ident> <t: Ident> ";" => {
+        ast::MessageDecl {
+            sender: sender,
+            name: name,
+            t: t,
+        }
+    },
+};
+
+pub Graph: ast::Graph = {
+    GraphLine+ => {
+        let mut g = ast::Graph::new();
+        for graphline in <> {
+            let mut indices = vec![];
+            for ident in graphline {
+                indices.push(g.add_node(ident))
+            }
+            let mut prev = indices[0];
+            for cur in indices.into_iter().skip(1) {
+                g.add_edge(prev, cur, ());
+                prev = cur;
+            }
+        }
+        g
+    },
+};
 
 pub GraphLine: Vec<ast::GraphIdent> = {
     <a: GraphIdent> <b: ("=>" GraphIdent)+> ";"=> {
         let mut c: Vec<_> = b.into_iter().map(|(_, ident)| ident).collect();
         c.insert(0, a);
         c
-    }
+    },
 };
 
 GraphIdent: ast::GraphIdent = {
     "connect" => ast::GraphIdent::Connect,
     "disconnect" => ast::GraphIdent::Disconnect,
-    Ident => ast::GraphIdent::Identifier(<>)
+    Ident => ast::GraphIdent::Identifier(<>),
 };
 
 Ident: String = {
     // note: this shouldn't match keywords, do something about it.
     r"[a-zA-Z](_?[a-zA-Z0-9])*" => <>.to_string(),
-};
-
-
-Num: i32 = {
-    r"[0-9]" => i32::from_str(<>).unwrap(),
 };
