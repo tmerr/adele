@@ -1,6 +1,6 @@
 #Adele
 
-Status: Everything here is tentative, I'm working out ideas before the implementation.
+Status: Everything here is tentative, still working out ideas
 
 Adele is an interface description language (IDL) that's minimal and makes strong guarantees. It is motivated by the fact that networking code is tedious to write and is often duplicated across the server and client. Life would be easier if we could define our networking logic in one place and use it to generate code for whatever language we would like.
 
@@ -54,13 +54,22 @@ arrow: `=>`, sum: `|`, product: `*`, eq: `=`, lparen: `(`, rparen: `)`, terminat
 #####Grammar
 Here's the grammar in ISO 14977 EBNF where whitespace is ignored and tokens are in capital letters.
 ```
-adele = systemsdecl, {typedecl}, {messagedecl}, graph;
+adele = systemsdecl, {tydecl}, {messagedecl}, graph;
 
 systemsdecl = SYSTEMS, IDENTIFIER, IDENTIFIER, TERMINATE;
 
-FIXME: typedecl = ...
+tydecl = TYPE, IDENTIFIER, EQ, tybind
+       | ALIAS, IDENTIFIER, EQ, tyexpr;
+tybind = bindterm, { SUM, bindterm };
+bindterm = IDENTIFIER, [OF, tyexpr];
+tyexpr = tyexpr PRODUCT tyexpr
+       | LPAREN tyexpr RPAREN
+       | IDENTIFIER {tyone};
+tyone = IDENTIFIER
+      | LPAREN tyexpr RPAREN
+      | INTLITERAL;
 
-messagedecl = MSG, IDENTIFIER, IDENTIFIER, IDENTIFIER, TERMINATE;
+messagedecl = MSG, IDENTIFIER, IDENTIFIER, tyone, TERMINATE;
 
 graph = graphline {graphline};
 graphline = graphident, ARROW, graphident, {ARROW, graphident}, TERMINATE;
