@@ -45,7 +45,7 @@ Tokens are defined using regular expressions.
 
 whitespace: `([\n\r\t ]|(#[^\n]*))+` (regex).  
 identifier: `[a-zA-Z](_?[a-zA-Z0-9])*` (regex). additionally, an identifier can't be a keyword.  
-keyword: `type|systems|msg|connect|disconnect|dynamic` (regex), or any primitive.  
+keyword: `type|alias|of|systems|msg|connect|disconnect` (regex), or any primitive.  
 primitive: `integer|bool|float|double|blob|utf8|array|vector` (regex)  
 intliteral: `[0-9]+` (regex)  
 arrow: `=>`, sum: `|`, product: `*`, eq: `=`, lparen: `(`, rparen: `)`, terminate: `;`  
