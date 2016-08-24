@@ -1,6 +1,18 @@
 use ast;
+use std::collections::HashMap;
 
 grammar;
+
+pub Root: ast::Root = {
+    <a: SystemsDecl> <b: TyDecl*> <c: MessageDecl*> <d: Graph> => {
+        ast::Root {
+            systems: a,
+            types: b,
+            messages: c,
+            graph: d
+        }
+    },
+};
 
 pub SystemsDecl: ast::SystemsDecl = {
     "systems" <a: Ident> <b: Ident> ";" => ast::SystemsDecl(a, b),
@@ -11,46 +23,46 @@ pub TyDecls: Vec<ast::TyDecl> = {
 };
 
 TyDecl: ast::TyDecl = {
-    "type" <Ident> "=" <TyCon> ";" => ast::TyDecl(<>),
+    "type" <Ident> "=" <TyBind> ";" =>
+        ast::TyDecl::Type(<>),
+    "alias" <Ident> "=" <TyExpr> ";" =>
+        ast::TyDecl::Alias(<>)
 };
 
-TyCon: ast::TyCon = {
-    <a: Ident> "of" <b: Ty> <c: ("|" <Ident> "of" <Ty>)*> => {
-        let mut c = c;
-        c.insert(0, (a, b));
-        ast::TyCon::Sum(c)
+TyBind: ast::Sum = {
+    <a: BindTerm> <b: ("|" <BindTerm>)*> => {
+        let mut b = b;
+        b.insert(0, a);
+        ast::Sum(b)
+    }
+};
+
+BindTerm: ast::SumBind = {
+    <Ident> <("of" <TyExpr>)?> =>
+        ast::SumBind(<>),
+};
+
+TyExpr: ast::Ty = {
+    <a: ExprTerm> <b: ("*" <ExprTerm>)*> => {
+        let mut b = b;
+        b.insert(0, a);
+        ast::Ty::Product(b)
     },
-    Ty => ast::TyCon::Direct(<>),
 };
 
-Ty: ast::Ty = {
-    <a: Ident> <b: InnerTy*> <c: ("*" <Ident> <InnerTy*>)*> => {
-        if c.len() == 0 {
-            ast::Ty::TyApply(a, b)
-        } else {
-            let mut c = c;
-            c.insert(0, (a, b));
-            let tys: Vec<_> = c.into_iter()
-                .map(|(x, y)| ast::Ty::TyApply(x, y))
-                .collect();
-            ast::Ty::Product(tys)
-        }
-    },
-    IntLiteral => <>,
+ExprTerm: ast::Ty = {
+    <Ident> <TyOne*> => ast::Ty::TyApply(<>),
+    "(" <TyExpr> ")" => <>,
 };
 
-InnerTy: ast::Ty = {
-    "(" <Ty> ")" => <>,
+TyOne: ast::Ty = {
     Ident => ast::Ty::TyApply(<>, vec![]),
+    "(" <TyExpr> ")" => <>,
     IntLiteral => <>,
 };
 
 IntLiteral: ast::Ty = {
     r"[0-9]+" => ast::Ty::IntLiteral(<>.to_string()),
-};
-
-pub MessageDecls: Vec<ast::MessageDecl> = {
-    MessageDecl+ => <>,
 };
 
 MessageDecl: ast::MessageDecl = {
@@ -66,10 +78,17 @@ MessageDecl: ast::MessageDecl = {
 pub Graph: ast::Graph = {
     GraphLine+ => {
         let mut g = ast::Graph::new();
+        let mut added = HashMap::new();
         for graphline in <> {
             let mut indices = vec![];
             for ident in graphline {
-                indices.push(g.add_node(ident))
+                if let Some(&i) = added.get(&ident) {
+                    indices.push(i);
+                } else {
+                    let i = g.add_node(ident.clone());
+                    indices.push(i);
+                    added.insert(ident, i);
+                }
             }
             let mut prev = indices[0];
             for cur in indices.into_iter().skip(1) {

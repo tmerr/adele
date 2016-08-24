@@ -1,11 +1,23 @@
 use petgraph;
 
-pub struct TyDecl(pub String, pub TyCon);
-
-pub enum TyCon {
-    Direct(Ty),
-    Sum(Vec<(String, Ty)>)
+pub struct Root {
+    pub systems: SystemsDecl,
+    pub types: Vec<TyDecl>,
+    pub messages: Vec<MessageDecl>,
+    pub graph: Graph
 }
+
+#[derive(Debug, PartialEq)]
+pub struct SystemsDecl(pub String, pub String);
+
+pub enum TyDecl {
+    Type(String, Sum),
+    Alias(String, Ty),
+}
+
+pub struct Sum(pub Vec<SumBind>);
+
+pub struct SumBind(pub String, pub Option<Ty>);
 
 pub enum Ty {
     IntLiteral(String),
@@ -13,10 +25,9 @@ pub enum Ty {
     Product(Vec<Ty>),
 }
 
-pub struct TyApply(TyCon, Vec<Ty>);
+pub struct TyApply(String, Vec<Ty>);
 
-pub struct SystemsDecl(pub String, pub String);
-
+#[derive(Debug, PartialEq)]
 pub struct MessageDecl {
     pub sender: String,
     pub name: String,
@@ -25,7 +36,7 @@ pub struct MessageDecl {
 
 pub type Graph = petgraph::graph::Graph<GraphIdent, ()>;
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Eq, Hash, Clone)]
 pub enum GraphIdent {
     Identifier(String),
     Connect,
