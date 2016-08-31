@@ -78,7 +78,7 @@ Message Encoding
 =========
 
 Let's start with a couple definitions:  
-`intbits(x, y) -> binarystring`:  a function that takes a nonnegative integer x and converts it to a y-bit binary string.  
+`intbits(x, y) -> binarystring`:  a function that takes a nonnegative integer x and converts it to a y-bit binary string
 `⊕`: an operator that concatenates two binary strings.
 
 #####Message prefix
@@ -107,11 +107,11 @@ tag, v: **L<sub>0</sub> t<sub>0</sub> &#124; ... &#124; L<sub>n-1</sub> t<sub>n-
 
 ##### Bitstring packing
 
-The resulting bitstring needs to be packed into a sequence of bytes. The rightmost element of the bitstring is put in the lowest addressed byte, as the lowest order bit. So packing the 12 element bit string `ABCDEFGHIJKL` (where each letter is variable representing a 1 or a 0) would look like:
+The resulting bitstring needs to be packed into a sequence of bytes. So we define a bitstring written left to right as placed into bytes from low address to high address, and within each byte, from low order bit to high order bit. For example consider a value of type `(integer 0 128) * (array bool 5)`. The integer would be 7 bits `IIIIIII` and the array would be 5 `AAAAA` and in memory it would look like
 
 byte offset| bits
 --- | ---
-0 |   EFGHIJKL
-1 |   0000ABCD
+0 |   `AIIIIIII`
+1 |   `0000AAAA`
 
 In the last byte, any unused bits are set to 0.
