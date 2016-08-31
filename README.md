@@ -77,8 +77,8 @@ graphident = IDENTIFIER | CONNECT | DISCONNECT;
 Message Encoding
 =========
 
-Let's start with a couple definitions:
-`intbits: (x: integer, y: integer) -> binarystring`:  a function that takes a nonnegative integer x and converts it to a y-bit binary string.  
+Let's start with a couple definitions:  
+`intbits(x, y) -> binarystring`:  a function that takes a nonnegative integer x and converts it to a y-bit binary string.  
 `⊕`: an operator that concatenates two binary strings.
 
 #####Message prefix
