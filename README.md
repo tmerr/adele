@@ -95,7 +95,7 @@ value: type | binary encoding | restrictions
 --- | --- | ---
 false : **bool** | '0' | none
 true : **bool** | '1' | none
-v : **integer a b** | intbits(v - c, ⌈log<sub>2</sub> c⌉) | a <= v < b, c = b - a
+v : **integer a b** | intbits(v - c, ⌈log<sub>2</sub> c⌉) | a <= v <= b, c = b - a + 1
 v : **float** |	IEEE754float(v) | none
 v : **double** | IEEE754double(v) | none
 size, v : **blob** |	intbits(size, 64) ⊕ rawbits(v) | size < 2<sup>64</sup>
@@ -107,7 +107,7 @@ tag, v: **L<sub>0</sub> t<sub>0</sub> &#124; ... &#124; L<sub>n-1</sub> t<sub>n-
 
 ##### Bitstring packing
 
-The resulting bitstring needs to be packed into a sequence of bytes. So we define a bitstring written left to right as placed into bytes from low address to high address, and within each byte, from low order bit to high order bit. For example consider a value of type `(integer 0 128) * (array bool 5)`. The integer would be 7 bits `IIIIIII` and the array would be 5 `AAAAA` and in memory it would look like
+The resulting bitstring needs to be packed into a sequence of bytes. So we define a bitstring written left to right as placed into bytes from low address to high address, and within each byte, from low order bit to high order bit. For example consider a value of type `(integer 0 127) * (array bool 5)`. The integer would be 7 bits `IIIIIII` and the array would be 5 `AAAAA` and in memory it would look like
 
 byte offset| bits
 --- | ---
