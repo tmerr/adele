@@ -1,7 +1,12 @@
 use ast;
 use std::collections::HashMap;
+use lalrpop_util::ParseError;
 
 grammar;
+
+extern {
+    type Error = String;
+}
 
 pub Root: ast::Root = {
     <a: SystemsDecl> <b: TyDecl*> <c: MessageDecl*> <d: Graph> => {
@@ -15,7 +20,7 @@ pub Root: ast::Root = {
 };
 
 pub SystemsDecl: ast::SystemsDecl = {
-    "systems" <a: Ident> <b: Ident> ";" => ast::SystemsDecl(a, b),
+    "systems" <a: Spanned<Ident>> <b: Spanned<Ident>> ";" => ast::SystemsDecl(a, b),
 };
 
 pub TyDecls: Vec<ast::TyDecl> = {
@@ -23,9 +28,9 @@ pub TyDecls: Vec<ast::TyDecl> = {
 };
 
 TyDecl: ast::TyDecl = {
-    "type" <Ident> "=" <TyBind> ";" =>
+    "type" <Spanned<Ident>> "=" <TyBind> ";" =>
         ast::TyDecl::Type(<>),
-    "alias" <Ident> "=" <TyExpr> ";" =>
+    "alias" <Spanned<Ident>> "=" <TyExpr> ";" =>
         ast::TyDecl::Alias(<>)
 };
 
@@ -38,7 +43,7 @@ TyBind: ast::Sum = {
 };
 
 BindTerm: ast::SumBind = {
-    <Ident> <("of" <TyExpr>)?> =>
+    <Spanned<Ident>> <("of" <TyExpr>)?> =>
         ast::SumBind(<>),
 };
 
@@ -51,12 +56,12 @@ TyExpr: ast::Ty = {
 };
 
 ExprTerm: ast::Ty = {
-    <Ident> <TyOne*> => ast::Ty::TyApply(<>),
+    <Spanned<Ident>> <TyOne*> => ast::Ty::TyApply(<>),
     "(" <TyExpr> ")" => <>,
 };
 
 TyOne: ast::Ty = {
-    Ident => ast::Ty::TyApply(<>, vec![]),
+    Spanned<Ident> => ast::Ty::TyApply(<>, vec![]),
     "(" <TyExpr> ")" => <>,
     IntLiteral => <>,
 };
@@ -66,7 +71,7 @@ IntLiteral: ast::Ty = {
 };
 
 MessageDecl: ast::MessageDecl = {
-    "msg" <sender: Ident> <name: Ident> <t: Ident> ";" => {
+    "msg" <sender: Spanned<Ident>> <name: Spanned<Ident>> <t: Spanned<Ident>> ";" => {
         ast::MessageDecl {
             sender: sender,
             name: name,
@@ -82,12 +87,12 @@ pub Graph: ast::Graph = {
         for graphline in <> {
             let mut indices = vec![];
             for ident in graphline {
-                if let Some(&i) = added.get(&ident) {
+                if let Some(&i) = added.get(&ident.node) {
                     indices.push(i);
                 } else {
                     let i = g.add_node(ident.clone());
                     indices.push(i);
-                    added.insert(ident, i);
+                    added.insert(ident.node, i);
                 }
             }
             let mut prev = indices[0];
@@ -100,8 +105,8 @@ pub Graph: ast::Graph = {
     },
 };
 
-pub GraphLine: Vec<ast::GraphIdent> = {
-    <a: GraphIdent> <b: ("=>" GraphIdent)+> ";"=> {
+pub GraphLine: Vec<ast::Spanned<ast::GraphIdent>> = {
+    <a: Spanned<GraphIdent>> <b: ("=>" Spanned<GraphIdent>)+> ";"=> {
         let mut c: Vec<_> = b.into_iter().map(|(_, ident)| ident).collect();
         c.insert(0, a);
         c
@@ -115,6 +120,20 @@ GraphIdent: ast::GraphIdent = {
 };
 
 Ident: String = {
-    // note: this shouldn't match keywords, do something about it.
-    r"[a-zA-Z](_?[a-zA-Z0-9])*" => <>.to_string(),
+    r"[a-zA-Z](_?[a-zA-Z0-9])*" =>? {
+        const KEYWORDS: [&'static str; 7] =
+            ["type", "alias", "of", "systems", "msg", "connect", "disconnect"];
+
+        if KEYWORDS.contains(&<>) {
+            Err(ParseError::User {
+                error: format!(r#"tried to use keyword "{}" as an identifier"#, <>)
+            })
+        } else {
+            Ok(<>.to_string())
+        }
+    },
+};
+
+Spanned<T>: ast::Spanned<T> = {
+    <a:@L> <b:T> <c:@R> => ast::Spanned { node: b, span: (a, c) }
 };
