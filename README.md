@@ -95,7 +95,7 @@ value: type | binary encoding | restrictions
 --- | --- | ---
 false : **bool** | '0' | none
 true : **bool** | '1' | none
-v : **integer a b** | intbits(v - c, ⌈log<sub>2</sub> c⌉) | a <= v <= b, c = b - a + 1
+v : **integer a b** | intbits(v - c + 1, ⌈log<sub>2</sub> c⌉) | a <= v <= b, c = b - a + 1
 v : **float** |	IEEE754float(v) | none
 v : **double** | IEEE754double(v) | none
 size, v : **blob** |	intbits(size, 64) ⊕ rawbits(v) | size < 2<sup>64</sup>
