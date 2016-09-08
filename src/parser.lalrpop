@@ -50,8 +50,12 @@ BindTerm: ast::SumBind = {
 TyExpr: ast::Ty = {
     <a: ExprTerm> <b: ("*" <ExprTerm>)*> => {
         let mut b = b;
-        b.insert(0, a);
-        ast::Ty::Product(b)
+        if b.len() == 0 {
+            a
+        } else {
+            b.insert(0, a);
+            ast::Ty::Product(b)
+        }
     },
 };
 
@@ -71,7 +75,7 @@ IntLiteral: ast::Ty = {
 };
 
 MessageDecl: ast::MessageDecl = {
-    "msg" <sender: Spanned<Ident>> <name: Spanned<Ident>> <t: Spanned<Ident>> ";" => {
+    "msg" <sender: Spanned<Ident>> <name: Spanned<Ident>> <t: TyOne> ";" => {
         ast::MessageDecl {
             sender: sender,
             name: name,
