@@ -1,5 +1,4 @@
 use petgraph;
-use petgraph::graph::NodeIndex;
 use std::collections::{HashSet, HashMap};
 
 type Span = (usize, usize);
@@ -167,9 +166,9 @@ pub fn validate<'a>(root: &'a Root) -> Result<(), (String, Span)> {
     }
 
 
-    let g = root.graph;
+    let g = &root.graph;
 
-    if let Some(connect_idx) = g.node_indices().position(|i| g.node_weight(i).unwrap().node == GraphIdent::Connect) {
+    if let Some(connect_idx) = g.node_indices().find(|&i| g.node_weight(i).unwrap().node == GraphIdent::Connect) {
         let connect_span = g.node_weight(connect_idx).unwrap().span;
         if g.neighbors_directed(connect_idx, petgraph::EdgeDirection::Outgoing).count() != 1 {
             return Err(("The connect node must have exactly one outgoing edge".to_string(), connect_span));
@@ -181,7 +180,7 @@ pub fn validate<'a>(root: &'a Root) -> Result<(), (String, Span)> {
         return Err(("The connect node must be present in the graph".to_string(), (0, 0)));
     }
 
-    if let Some(disconnect_idx) = g.node_indices().position(|i| g.node_weight(i).unwrap().node == GraphIdent::Disconnect) {
+    if let Some(disconnect_idx) = g.node_indices().find(|&i| g.node_weight(i).unwrap().node == GraphIdent::Disconnect) {
         let disconnect_span = g.node_weight(disconnect_idx).unwrap().span;
         if g.neighbors_directed(disconnect_idx, petgraph::EdgeDirection::Outgoing).count() != 1 {
             return Err(("The disconnect node should have no outgoing edges".to_string(), disconnect_span));
@@ -190,9 +189,9 @@ pub fn validate<'a>(root: &'a Root) -> Result<(), (String, Span)> {
 
     for i in g.node_indices() {
         for j in g.neighbors(i) {
-            match (g.node_weight(i).unwrap(), g.node_weight(j).unwrap()) {
-                (GraphIdent::Identifier(ref s1), GraphIdent::Identifier(ref s2)) => {
-                    if s1.node == s2.node {
+            match (&g.node_weight(i).unwrap().node, &g.node_weight(j).unwrap().node) {
+                (&GraphIdent::Identifier(ref s1), &GraphIdent::Identifier(ref s2)) => {
+                    if s1 == s2 {
                         let text = format!("For now nodes must alternate systems, but {} -> {} both use the same system.", s1, s2);
                         return Err((text.to_string(), (0, 0)));
                     }
