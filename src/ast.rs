@@ -170,8 +170,14 @@ pub fn validate<'a>(root: &'a Root) -> Result<(), (String, Span)> {
 
     if let Some(connect_idx) = g.node_indices().find(|&i| g.node_weight(i).unwrap().node == GraphIdent::Connect) {
         let connect_span = g.node_weight(connect_idx).unwrap().span;
-        if g.neighbors_directed(connect_idx, petgraph::EdgeDirection::Outgoing).count() != 1 {
-            return Err(("The connect node must have exactly one outgoing edge".to_string(), connect_span));
+        if g.neighbors_directed(connect_idx, petgraph::EdgeDirection::Outgoing).count() == 0 {
+            return Err(("The connect node must have at least one outgoing edge".to_string(), connect_span));
+        }
+        for n in g.neighbors_directed(connect_idx, petgraph::EdgeDirection::Outgoing) {
+            match g.node_weight(n).unwrap().node {
+                GraphIdent::Identifier(_) => (),
+                _ => return Err(("The connect node can't have edges to disconnect or itself".to_string(), (0, 0)))
+            }
         }
         if g.neighbors_directed(connect_idx, petgraph::EdgeDirection::Incoming).count() > 0 {
             return Err(("The connect node should have no incoming edges".to_string(), connect_span));

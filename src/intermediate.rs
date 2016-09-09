@@ -133,8 +133,7 @@ fn convert_tydecls(tydecls: &[ast::TyDecl], naming: NamingConvention) -> Vec<TyD
 
 /// Return a recv_xyz function skeleton for the given node and system.
 /// It returns None if the node's sender is itself, or if the node is a disconnect.
-fn create_function(system: &str,
-                   current_ident: &ast::GraphIdent,
+fn create_function(current_ident: &ast::GraphIdent,
                    neighbor_idents: &[&ast::GraphIdent],
                    message_map: &HashMap<&str, &ast::MessageDecl>,
                    naming: NamingConvention) -> FunctionSkeleton {
@@ -204,7 +203,7 @@ fn create_functions<'a>(messages: &'a [ast::MessageDecl], g: &ast::Graph,
             },
         };
         if sender != system {
-            let f = create_function(system, current_ident, &neighbor_idents[..], &message_map, naming);
+            let f = create_function(current_ident, &neighbor_idents[..], &message_map, naming);
             result.push(f);
         }
     }
