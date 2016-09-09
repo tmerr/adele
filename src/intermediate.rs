@@ -1,6 +1,6 @@
 /// A transformed AST that represents the code for a particular system,
 /// with skeleton functions, and identifiers that respect naming conventions.
-/// This is ins preparation for code generation.
+/// This is in preparation for code generation.
 
 use ast;
 
@@ -125,6 +125,7 @@ fn convert_tydecls(tydecls: &[ast::TyDecl], naming: NamingConvention) -> Vec<TyD
 
 fn create_functions(messages: &[ast::MessageDecl], graph: &ast::Graph,
                     system: &str, naming: NamingConvention) -> Vec<Function> {
+    unimplemented!();
 }
 
 pub fn intermediate_ast(root: &ast::Root, system: &str, naming: NamingConvention) -> Root {
@@ -134,4 +135,39 @@ pub fn intermediate_ast(root: &ast::Root, system: &str, naming: NamingConvention
         types: convert_tydecls(&root.types[..], naming),
         functions: create_functions(&root.messages[..], &root.graph, system, naming),
     }
+}
+
+#[test]
+fn test_convert_ident_pascal_letter() {
+    assert_eq!(&convert_ident("x", IdentStyle::Pascal), "X");
+}
+
+#[test]
+fn test_convert_ident_pascal_word() {
+    assert_eq!(&convert_ident("test", IdentStyle::Pascal), "Test");
+}
+    
+#[test]
+fn test_convert_ident_pascal_words() {
+    assert_eq!(&convert_ident("this_is_a_test", IdentStyle::Pascal), "ThisIsATest");
+}
+
+#[test]
+fn test_convert_ident_camel_letter() {
+    assert_eq!(&convert_ident("x", IdentStyle::Camel), "x");
+}
+
+#[test]
+fn test_convert_ident_camel_word() {
+    assert_eq!(&convert_ident("test", IdentStyle::Camel), "test");
+}
+
+#[test]
+fn test_convert_ident_camel_words() {
+    assert_eq!(&convert_ident("this_is_a_test", IdentStyle::Camel), "thisIsATest");
+}
+
+#[test]
+fn test_convert_ident_underscore() {
+    assert_eq!(&convert_ident("this_is_a_test", IdentStyle::Underscore), "this_is_a_test");
 }
