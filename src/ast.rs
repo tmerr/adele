@@ -1,7 +1,7 @@
 use petgraph;
 use std::collections::{HashSet, HashMap};
 
-type Span = (usize, usize);
+pub type Span = (usize, usize);
 
 #[derive(Clone)]
 pub struct Spanned<T> {
