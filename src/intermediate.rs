@@ -3,18 +3,21 @@
 /// This is in preparation for code generation.
 
 use ast;
+use std::collections::HashMap;
 
 pub struct Root {
     pub types: Vec<TyDecl>,
-    pub functions: Vec<Function>
+    pub functions: Vec<FunctionSkeleton>
 }
 
 pub struct SystemsDecl(String, String);
 
 pub enum TyDecl {
-    Type(String, Vec<SumBind>),
+    Type(String, Sum),
     Alias(String, Ty),
 }
+
+type Sum = Vec<SumBind>;
 
 pub struct SumBind(pub String, pub Option<Ty>);
 
@@ -24,10 +27,16 @@ pub enum Ty {
     Product(Vec<Ty>),
 }
 
-pub struct Function {
+pub struct FunctionSkeleton {
     name: String,
-    args: Vec<Ty>,
-    ret: Ty,
+
+    /// The argument type of the function.
+    /// Note that the special connect node takes no arguments.
+    arg: Option<Ty>,
+
+    /// The return type of the function.
+    /// This is basically a TyDecl::Type.
+    ret: (String, Sum),
 }
 
 #[derive(Copy, Clone)]
@@ -44,7 +53,6 @@ pub enum IdentStyle {
     Camel,
     Underscore
 }
-
 
 fn convert_ident(ident: &str, style: IdentStyle) -> String {
     match style {
@@ -123,9 +131,84 @@ fn convert_tydecls(tydecls: &[ast::TyDecl], naming: NamingConvention) -> Vec<TyD
     }).collect()
 }
 
-fn create_functions(messages: &[ast::MessageDecl], graph: &ast::Graph,
-                    system: &str, naming: NamingConvention) -> Vec<Function> {
-    unimplemented!();
+/// Return a recv_xyz function skeleton for the given node and system.
+/// It returns None if the node's sender is itself, or if the node is a disconnect.
+fn create_function(system: &str,
+                   current_ident: &ast::GraphIdent,
+                   neighbor_idents: &[&ast::GraphIdent],
+                   message_map: &HashMap<&str, &ast::MessageDecl>,
+                   naming: NamingConvention) -> FunctionSkeleton {
+    let (basename, arg) = match *current_ident {
+        ast::GraphIdent::Identifier(ref s) => {
+            let msg = message_map.get(s.as_str()).unwrap();
+            let ty = convert_ty(&msg.t, naming);
+            (s.as_str(), Some(ty))
+        },
+        ast::GraphIdent::Connect => {
+            ("connect", None)
+        },
+        ast::GraphIdent::Disconnect => unreachable!(),
+    };
+    let name = convert_ident(&("recv_".to_string() + basename), naming.function_names);
+
+    let mut sumbinds: Vec<SumBind> = vec![];
+    for n in neighbor_idents {
+        match **n {
+            ast::GraphIdent::Identifier(ref s) => {
+                let ty0 = &message_map.get(s.as_str()).unwrap().t;
+                let ty1 = convert_ty(&ty0, naming);
+                sumbinds.push(SumBind(s.to_string(), Some(ty1)));
+            },
+            ast::GraphIdent::Connect => {
+                unreachable!("connect can't have incoming edges")
+            },
+            ast::GraphIdent::Disconnect => {
+                let name = convert_ident("disconnect", naming.variant_labels);
+                sumbinds.push(SumBind(name, None));
+            },
+        }
+    }
+    let sumname = convert_ident(&(basename.to_string() + "_response"),
+                                naming.variant_labels);
+    FunctionSkeleton {
+        name: name,
+        arg: arg,
+        ret: (sumname, sumbinds),
+    }
+}
+
+fn create_functions<'a>(messages: &'a [ast::MessageDecl], g: &ast::Graph,
+                        system: &str, naming: NamingConvention) -> Vec<FunctionSkeleton> {
+    let mut message_map: HashMap<&'a str, &ast::MessageDecl> = HashMap::new();
+    for msg in messages {
+        message_map.insert(&msg.name.node, msg);
+    }
+
+    let mut result = vec![];
+    for i in g.node_indices() {
+        let current_ident = &g.node_weight(i).unwrap().node;
+        let neighbor_idents: Vec<_> = g.neighbors(i).map(|n| &g.node_weight(n).unwrap().node).collect();
+        let sender = match *current_ident {
+            ast::GraphIdent::Identifier(ref s) => {
+                &message_map.get(s.as_str()).unwrap().sender.node
+            },
+            ast::GraphIdent::Connect => {
+                if let Some(&&ast::GraphIdent::Identifier(ref s)) = neighbor_idents.get(0) {
+                    &message_map.get(s.as_str()).unwrap().sender.node
+                } else {
+                    panic!("connect must have at least one outgoing edge to an identifier");
+                }
+            },
+            ast::GraphIdent::Disconnect => {
+                continue
+            },
+        };
+        if sender != system {
+            let f = create_function(system, current_ident, &neighbor_idents[..], &message_map, naming);
+            result.push(f);
+        }
+    }
+    result
 }
 
 pub fn intermediate_ast(root: &ast::Root, system: &str, naming: NamingConvention) -> Root {
