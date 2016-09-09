@@ -3,6 +3,7 @@ extern crate lalrpop_util;
 
 pub mod parser;
 pub mod ast;
+pub mod intermediate;
 
 fn main() {
     println!("Hello, world!");
