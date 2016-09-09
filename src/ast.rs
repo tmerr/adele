@@ -29,7 +29,10 @@ pub struct SumBind(pub Spanned<String>, pub Option<Ty>);
 
 pub enum Ty {
     IntLiteral(String),
+
+    /// If it has no argument it may either be a type or an alias
     TyApply(Spanned<String>, Vec<Ty>),
+
     Product(Vec<Ty>),
 }
 
@@ -66,7 +69,7 @@ fn basis() -> HashMap<String, Vec<TyArg>> {
     map
 }
 
-fn validate_ty(ty: &Ty, known_tycons: &HashMap<String, Vec<TyArg>>) -> Result<(), (String, Span)> {
+fn validate_ty(ty: &Ty, known_tycons: &HashMap<String, Vec<TyArg>>, known_aliases: &HashSet<&str>) -> Result<(), (String, Span)> {
     match *ty {
         Ty::IntLiteral(ref s) => {
             // Range check?
@@ -86,14 +89,14 @@ fn validate_ty(ty: &Ty, known_tycons: &HashMap<String, Vec<TyArg>>) -> Result<()
                             return Err(("Type argument mismatch".to_string(), sident.span));
                         }
 
-                        try!(validate_ty(arg, known_tycons));
+                        try!(validate_ty(arg, known_tycons, known_aliases));
                     }
                 } else {
                     let text = format!("Expected {} type args but got {}",
                                        tyargs.len(), args.len()).to_string();
                     return Err((text, sident.span));
                 }
-            } else {
+            } else if !(args.len() == 0 && known_aliases.contains(sident.node.as_str())) {
                 let text = format!("Referred to an unknown type {}", sident.node).to_string();
                 return Err((text, sident.span));
             }
@@ -101,7 +104,7 @@ fn validate_ty(ty: &Ty, known_tycons: &HashMap<String, Vec<TyArg>>) -> Result<()
         Ty::Product(ref tys) => {
             assert!(tys.len() >= 2, "Internal error: a product should always have at least 2 elements. This is a bug.");
             for t in tys.iter() {
-                try!(validate_ty(t, known_tycons));
+                try!(validate_ty(t, known_tycons, known_aliases));
             }
         },
     }
@@ -127,7 +130,7 @@ pub fn validate<'a>(root: &'a Root) -> Result<(), (String, Span)> {
                         set.insert(&name.node);
                     }
                     for sumbind in sumbinds {
-                        try!(validate_ty(sumbind, &known_tycons));
+                        try!(validate_ty(sumbind, &known_tycons, &known_aliases));
                     }
                 }
                 if known_tycons.contains_key(spanned.node.as_str()) ||
@@ -137,7 +140,7 @@ pub fn validate<'a>(root: &'a Root) -> Result<(), (String, Span)> {
                 known_tycons.insert(spanned.node.clone(), vec![]);
             }
             TyDecl::Alias(ref spanned, ref ty) => {
-                try!(validate_ty(ty, &known_tycons));
+                try!(validate_ty(ty, &known_tycons, &known_aliases));
                 if known_tycons.contains_key(spanned.node.as_str()) ||
                    known_aliases.contains(spanned.node.as_str()) {
                     return Err(("Tried to use the same type or alias name twice".to_string(), spanned.span));
@@ -162,7 +165,7 @@ pub fn validate<'a>(root: &'a Root) -> Result<(), (String, Span)> {
         if let Ty::IntLiteral(_) = message.t {
             return Err(("Unexpected integer".to_string(), message.name.span));
         }
-        try!(validate_ty(&message.t, &known_tycons));
+        try!(validate_ty(&message.t, &known_tycons, &known_aliases));
     }
 
 
@@ -188,7 +191,7 @@ pub fn validate<'a>(root: &'a Root) -> Result<(), (String, Span)> {
 
     if let Some(disconnect_idx) = g.node_indices().find(|&i| g.node_weight(i).unwrap().node == GraphIdent::Disconnect) {
         let disconnect_span = g.node_weight(disconnect_idx).unwrap().span;
-        if g.neighbors_directed(disconnect_idx, petgraph::EdgeDirection::Outgoing).count() != 1 {
+        if g.neighbors_directed(disconnect_idx, petgraph::EdgeDirection::Outgoing).count() != 0 {
             return Err(("The disconnect node should have no outgoing edges".to_string(), disconnect_span));
         }
     }
