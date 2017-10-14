@@ -1,6 +1,6 @@
-#Adele
+# Adele
 
-Status: Everything here could change. Still working out ideas.
+Status: Vaporware.
 
 Adele is an interface description language (IDL) that's minimal and makes useful guarantees. It is motivated by the fact that networking code is tedious to write and is often duplicated across the server and client. Life would be easier if we could define our networking logic in one place and use it to generate code for whatever language we would like.
 
@@ -31,13 +31,13 @@ The portion of the code that says `connect => ...` describes what messages can f
 
 Because the `connect => ...` portion of code conceptually represents a graph I have created a [visual graph editor](https://github.com/tmerr/adele-gui) to make it easier to edit and understand it.
 
-#Code Generation
+# Code Generation
 
 Each incoming message corresponds to a callback with its argument being the message type, and a return value that is the next outgoing message. Generated code should follow the target language's naming conventions.
 
-#Syntax
+# Syntax
 
-#####Tokens
+##### Tokens
 
 Tokens are defined using regular expressions.
 
@@ -49,7 +49,7 @@ intliteral: `[0-9]+` (regex)
 arrow: `=>`, sum: `|`, product: `*`, eq: `=`, lparen: `(`, rparen: `)`, terminate: `;`  
 
 
-#####Grammar
+##### Grammar
 Here's the grammar in ISO 14977 EBNF where whitespace is ignored and tokens are in capital letters.
 ```
 adele = systemsdecl, {tydecl}, {messagedecl}, graph;
@@ -81,13 +81,13 @@ Let's start with a couple definitions:
 `intbits(x, y) -> binarystring`:  a function that takes a nonnegative integer x and converts it to a y-bit binary string
 `⊕`: an operator that concatenates two binary strings.
 
-#####Message prefix
+##### Message prefix
 
 The message prefix specifies which node in the graph to transition to.
 
 Let n<sub>0</sub>, n<sub>1</sub>, .., n<sub>k-1</sub> be the current node's neighbors sorted by name, alphabetically ascending. The transition is specified as a 0-based index into those neighbors. For example in a graph with `a => b` and `a => c`, and current node `a`, a transition 0 would mean to go to node `b` and transition 1 would mean to go to node `c`. When encoded as a binary string the transition `i` becomes intbits(i, ⌈log<sub>2</sub> k⌉). This binary string is then concatenated with the message payload.
 
-#####Message payload
+##### Message payload
 
 The message payload holds the data that is associated with the message. 
 
